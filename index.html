@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f4ea">
+  <meta name="description" content="Simulador de riego por goteo para un huerto comunitario. Compara Heun y Runge–Kutta de cuarto orden frente a la solución analítica.">
+  <title>Cuaderno de riego · Huerto por goteo</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#experimento">Ir al simulador</a>
+  <header class="masthead" id="inicio">
+    <a class="wordmark" href="#inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 29C9 29 5 24 5 18C5 13 10 8 16 3C22 8 27 13 27 18C27 24 23 29 16 29Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 24C16 19 18 15 22 12M16 21C15 17 12 16 9 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Cuaderno de riego</a>
+    <nav aria-label="Navegación principal">
+      <a href="#experimento">Simulador</a>
+      <a href="#comparacion">Gráficas</a>
+      <a href="#modelo">Modelo</a>
+    </nav>
+    <span class="mast-meta">INF 373 <span>·</span> UMSA</span>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <div class="intro-copy">
+        <p class="kicker">MÉTODOS NUMÉRICOS <span>01 / EDO</span></p>
+        <h1 id="title">Agua para un<br>huerto vecinal</h1>
+        <p class="lede">Un grupo de vecinos quiere recuperar la reserva de agua de su huerto con riego por goteo. <strong>¿Cuántas horas necesita para llegar a 24 litros?</strong></p>
+        <p class="note">Caso hipotético de un huerto comunitario en El Alto. Los valores iniciales son supuestos de trabajo.</p>
+        <a class="jump" href="#experimento">Abrir el simulador <span aria-hidden="true">↘</span></a>
+      </div>
+      <figure class="illustration">
+        <svg viewBox="0 0 460 300" role="img" aria-labelledby="bed-title bed-desc">
+          <title id="bed-title">Corte esquemático de un bancal con riego por goteo</title>
+          <desc id="bed-desc">El agua llega por una línea de goteo, una parte queda retenida en el sustrato y otra sale por drenaje.</desc>
+          <defs>
+            <pattern id="soil-dots" width="17" height="17" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r="1.1" fill="#996743"/><circle cx="12" cy="11" r=".8" fill="#996743"/></pattern>
+            <pattern id="wet-dots" width="13" height="13" patternUnits="userSpaceOnUse"><path d="m1 5 3-2m3 8 4-3" stroke="#597855" stroke-width=".9"/></pattern>
+          </defs>
+          <rect x="36" y="148" width="388" height="97" rx="3" fill="#e8cda7" stroke="#365143"/>
+          <rect x="37" y="150" width="386" height="94" fill="url(#soil-dots)"/>
+          <path d="M39 193C99 193 129 220 180 207S262 175 321 198S389 213 421 196V243H39Z" fill="#b7c69a"/>
+          <path d="M39 193C99 193 129 220 180 207S262 175 321 198S389 213 421 196V243H39Z" fill="url(#wet-dots)"/>
+          <path d="M38 146H425M50 140h362" stroke="#365143" stroke-width="2" stroke-linecap="round"/>
+          <path d="M75 140V92H362" stroke="#365143" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M132 92v9M218 92v9M304 92v9" stroke="#365143" stroke-width="2" stroke-linecap="round"/>
+          <g fill="#3e6c52">
+            <path d="M132 108q-7 9-7 12a7 7 0 0 0 14 0q0-3-7-12Z"/>
+            <path d="M218 108q-7 9-7 12a7 7 0 0 0 14 0q0-3-7-12Z"/>
+            <path d="M304 108q-7 9-7 12a7 7 0 0 0 14 0q0-3-7-12Z"/>
+          </g>
+          <g fill="#77966b" stroke="#365143" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M155 146q0-22 9-29q-1 10-9 16q-14-3-18-11q12-1 18 11"/>
+            <path d="M247 146q1-23 10-31q0 12-10 19q-15-1-19-11q11-2 19 11"/>
+            <path d="M338 146q0-26 10-33q0 12-10 19q-15-2-19-11q10-2 19 11"/>
+          </g>
+          <g fill="none" stroke="#49604c" stroke-dasharray="3 5" stroke-width="1.4">
+            <path d="M132 154v39M218 154v46M304 154v39M206 222v49"/>
+          </g>
+          <path d="m202 266 4 6 4-6" fill="none" stroke="#49604c" stroke-width="1.4"/>
+          <g fill="#365143" font-family="system-ui, sans-serif" font-size="12">
+            <text x="77" y="79">Línea de goteo</text>
+            <text x="231" y="229">Reserva de agua y(t)</text>
+            <text x="219" y="275">Pérdida por drenaje</text>
+          </g>
+          <path d="M397 157h15m-8 0v78m-7 0h15" fill="none" stroke="#365143" stroke-width="1"/>
+          <text x="409" y="192" fill="#365143" font-family="Georgia,serif" font-size="15" font-style="italic">C</text>
+        </svg>
+        <figcaption><span>FIG. 1</span> Esquema del bancal y su reserva de agua.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="experimento" aria-labelledby="experiment-title">
+      <div class="section-top"><span class="index">01</span><h2 id="experiment-title">Configura el riego</h2></div>
+      <div class="experiment">
+        <form id="config" class="config" novalidate>
+          <p class="small-heading">Entradas del ensayo</p>
+          <div class="fields">
+            <label for="y0">Reserva inicial <i>y₀</i><span class="input-frame"><input id="y0" name="y0" type="number" step="any" inputmode="decimal" value="8" required><span>L</span></span></label>
+            <label for="C">Capacidad <i>C</i><span class="input-frame"><input id="C" name="C" type="number" step="any" inputmode="decimal" value="40" required><span>L</span></span></label>
+            <label for="r">Aporte máximo <i>r</i><span class="input-frame"><input id="r" name="r" type="number" step="any" inputmode="decimal" value="8" required><span>L/h</span></span></label>
+            <label for="k">Tasa de pérdida <i>k</i><span class="input-frame"><input id="k" name="k" type="number" step="any" inputmode="decimal" value="0.1" required><span>1/h</span></span></label>
+            <label for="target">Meta de reserva<span class="input-frame"><input id="target" name="target" type="number" step="any" inputmode="decimal" value="24" required><span>L</span></span></label>
+            <label for="T">Tiempo total <i>T</i><span class="input-frame"><input id="T" name="T" type="number" step="any" inputmode="decimal" value="8" required><span>h</span></span></label>
+            <label for="h">Paso inicial <i>h</i><span class="input-frame"><input id="h" name="h" type="number" step="any" inputmode="decimal" value="2" required><span>h</span></span></label>
+          </div>
+          <p id="step-hint" class="note">Se comparan el paso indicado y su mitad con las mismas entradas.</p>
+          <p id="error" class="error" role="alert" hidden></p>
+          <div class="actions"><button class="run" type="submit">Simular riego <span aria-hidden="true">→</span></button><button class="reset" id="reset" type="button">Restaurar ejemplo</button></div>
+        </form>
+        <div class="brief" id="result" aria-live="polite" aria-atomic="true">
+          <p class="small-heading">Lectura del ensayo</p>
+          <p class="waiting">Preparando el escenario inicial…</p>
+        </div>
+      </div>
+      <div id="warnings" hidden aria-live="polite"></div>
+      <noscript><p class="error">Activa JavaScript para calcular y mostrar el ensayo.</p></noscript>
+    </section>
+
+    <section class="section" id="comparacion" aria-labelledby="comparison-title">
+      <div class="section-top"><span class="index">02</span><h2 id="comparison-title">Compara los métodos</h2></div>
+      <div class="chart-top">
+        <div><h3>Evolución de la reserva</h3><p>La línea de referencia se calcula con la expresión exacta.</p></div>
+        <div class="switch" id="mesh-controls" aria-label="Paso de la gráfica"></div>
+      </div>
+      <div class="chart-scroll"><svg id="curve-chart" viewBox="0 0 740 340" role="img" aria-label="Comparación de la reserva exacta, Heun y RK4"></svg></div>
+      <ul class="legend" aria-label="Leyenda de la gráfica">
+        <li><span class="swatch exact"></span> Analítica</li>
+        <li><span class="swatch heun"></span> Heun</li>
+        <li><span class="swatch rk4"></span> RK4</li>
+        <li><span class="swatch goal"></span> Meta</li>
+      </ul>
+      <div class="errors-grid">
+        <div class="error-plot">
+          <h3>Error por instante</h3>
+          <p>Distancia absoluta a la solución exacta. Los puntos se sitúan en los instantes de la malla.</p>
+          <div class="chart-scroll"><svg id="error-chart" viewBox="0 0 740 286" role="img" aria-label="Errores absolutos de Heun y RK4"></svg></div>
+        </div>
+        <div class="error-readout">
+          <h3>Qué cambia al refinar</h3>
+          <div id="error-summary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="trazas" aria-labelledby="steps-title">
+      <div class="section-top"><span class="index">03</span><h2 id="steps-title">Resultados por paso</h2></div>
+      <p class="section-lede">El error absoluto se mide en litros. El relativo porcentual divide ese error por el valor absoluto de la referencia y multiplica por 100. Si la referencia es cero, se muestra «—».</p>
+      <div id="step-tables"></div>
+    </section>
+
+    <section class="section" id="modelo" aria-labelledby="model-title">
+      <div class="section-top"><span class="index">04</span><h2 id="model-title">Cómo se calcula</h2></div>
+      <div class="model-grid">
+        <article>
+          <h3>Balance de agua</h3>
+          <p><i>y(t)</i> es la reserva de agua en litros y <i>t</i> mide horas desde el comienzo del riego. El aporte supuesto disminuye con la fracción de sustrato ya ocupada, <i>y/C</i>. La pérdida aumenta en proporción a la reserva.</p>
+          <div class="formula" aria-label="Derivada de y igual a r por uno menos y dividido por C, menos k por y">
+            <i>y′ = r(1 − y/C) − ky</i> <span>con <i>y(0) = y₀</i></span>
+          </div>
+          <p>Con <i>λ = r/C + k</i>, se obtiene <i>y′ + λy = r</i>. Si <i>λ &gt; 0</i>, el factor integrante es <i>e<sup>λt</sup></i> y la reserva de equilibrio es <i>y<sub>∞</sub> = r/λ</i>.</p>
+          <div class="formula"><i>y(t) = y<sub>∞</sub> + (y₀ − y<sub>∞</sub>)e<sup>−λt</sup></i></div>
+          <p>En <i>t = 0</i>, la expresión da <i>y₀</i>. Al derivar se obtiene <i>−λ(y − y<sub>∞</sub>) = r − λy</i>, que es la EDO. Si <i>λ = 0</i>, también <i>r = 0</i> y la reserva queda constante.</p>
+        </article>
+        <article>
+          <h3>Dos aproximaciones</h3>
+          <p><strong>Heun, orden 2.</strong> Usa una pendiente al comienzo y otra en el extremo predicho. El avance es el paso por el promedio de ambas.</p>
+          <div class="formula"><i>p = f(tₙ, yₙ)</i><br><i>q = f(tₙ + h, yₙ + hp)</i><br><i>yₙ₊₁ = yₙ + h(p + q)/2</i></div>
+          <p><strong>RK4 clásico, orden 4.</strong> Calcula cuatro pendientes, dos a mitad del paso, y las combina con los pesos 1, 2, 2, 1.</p>
+          <div class="formula"><i>k₁ = f(tₙ, yₙ)</i><br><i>k₂ = f(tₙ + h/2, yₙ + hk₁/2)</i><br><i>k₃ = f(tₙ + h/2, yₙ + hk₂/2)</i><br><i>k₄ = f(tₙ + h, yₙ + hk₃)</i><br><i>yₙ₊₁ = yₙ + h(k₁ + 2k₂ + 2k₃ + k₄)/6</i></div>
+        </article>
+      </div>
+      <div class="limits">
+        <h3>Qué puede decidir el huerto</h3>
+        <p>El ensayo permite comparar horarios de riego y saber si la meta queda por debajo de la reserva de equilibrio. La capacidad, la tasa de aporte y la pérdida son hipótesis constantes. Para tomar una decisión de campo harían falta mediciones y un modelo que tenga en cuenta el clima, el suelo y el consumo de las plantas.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div><strong>Carlos Angel Moya Choque</strong><br><span>Mención Desarrollo de Software</span></div>
+    <div><strong>INF 373 · Métodos Numéricos</strong><br><span>Lic. Brigida Alexandra Carvajal Blanco</span></div>
+    <a href="#inicio">Volver al inicio ↑</a>
+  </footer>
+</body>
+</html>

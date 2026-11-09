@@ -1,0 +1,4 @@
+entrega/
+node_modules/
+dist/
+.openai/

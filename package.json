@@ -1,0 +1,10 @@
+{
+  "name": "huerto-goteo-inf373",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node servir.mjs",
+    "test": "node --test math.test.mjs"
+  }
+}
